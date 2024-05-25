@@ -15,6 +15,14 @@ type APIServer struct {
 	storage    Storage
 }
 
+type ApiError struct {
+	Msg string `json:"error"`
+}
+
+func (e ApiError) Error() string {
+	return e.Msg
+}
+
 func NewAPIServer(listenAddr string, storage Storage) *APIServer {
 	return &APIServer{
 		listenAddr: listenAddr,
@@ -46,7 +54,7 @@ func (s *APIServer) getEmployee(w http.ResponseWriter, r *http.Request) error {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return fmt.Errorf("invalid id given %s", idStr)
+		return ApiError{Msg: fmt.Sprintf("invalid id given %s", idStr)}
 	}
 
 	employee, err := s.storage.GetEmployee(id)
@@ -60,7 +68,7 @@ func (s *APIServer) getEmployee(w http.ResponseWriter, r *http.Request) error {
 func (s *APIServer) createEmployee(w http.ResponseWriter, r *http.Request) error {
 	var employeeReq CreateEmployeeRequest
 	if err := json.NewDecoder(r.Body).Decode(&employeeReq); err != nil {
-		return err
+		return ApiError{Msg: "invalid request body"}
 	}
 	defer r.Body.Close()
 
@@ -79,14 +87,17 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 
 type apiFunc func(http.ResponseWriter, *http.Request) error
 
-type apiError struct {
-	Error string `json:"error"`
-}
-
 func makeHTTPHandler(fn apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := fn(w, r); err != nil {
-			WriteJSON(w, http.StatusBadRequest, apiError{Error: err.Error()})
+		switch err := fn(w, r); err.(type) {
+		case nil:
+			return
+		case ApiError:
+			WriteJSON(w, http.StatusBadRequest, ApiError{Msg: err.Error()})
+		case StorageError:
+			WriteJSON(w, http.StatusInternalServerError, ApiError{Msg: err.Error()})
+		default:
+			WriteJSON(w, http.StatusInternalServerError, ApiError{Msg: "internal server error"})
 		}
 	}
 }

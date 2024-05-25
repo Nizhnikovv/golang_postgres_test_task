@@ -1,4 +1,4 @@
-error handling
 add config
 tests full coverage
 context(graceful shutdown)
+proper logging
