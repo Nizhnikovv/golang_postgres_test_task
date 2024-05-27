@@ -95,6 +95,7 @@ func makeHTTPHandler(fn apiFunc) http.HandlerFunc {
 		case ApiError:
 			WriteJSON(w, http.StatusBadRequest, ApiError{Msg: err.Error()})
 		case StorageError:
+			log.Printf("storage error: %s", err.Error())
 			WriteJSON(w, http.StatusInternalServerError, ApiError{Msg: err.Error()})
 		default:
 			WriteJSON(w, http.StatusInternalServerError, ApiError{Msg: "internal server error"})

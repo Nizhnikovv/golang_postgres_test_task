@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 
 	_ "github.com/lib/pq"
 )
@@ -66,7 +65,6 @@ func (s *PostgresStorage) CreateEmployee(employee Employee) error {
 
 	_, err := s.db.Exec(query, employee.FirstName, employee.LastName, employee.MiddleName, employee.Phone, employee.City)
 	if err != nil {
-		log.Printf("Error while creating employee: %v", err)
 		return StorageError{Msg: "Something went wrong while creating employee"}
 	}
 
@@ -76,7 +74,6 @@ func (s *PostgresStorage) CreateEmployee(employee Employee) error {
 func (s *PostgresStorage) GetEmployees() ([]*Employee, error) {
 	rows, err := s.db.Query("SELECT id, first_name, last_name, middle_name, phone, city FROM employees")
 	if err != nil {
-		log.Printf("Error while getting employees: %v", err)
 		return nil, StorageError{Msg: "Something went wrong while getting employees"}
 	}
 	defer rows.Close()
@@ -85,7 +82,6 @@ func (s *PostgresStorage) GetEmployees() ([]*Employee, error) {
 	for rows.Next() {
 		employee, err := scanIntoEmployee(rows)
 		if err != nil {
-			log.Printf("Error while scanning employee: %v", err)
 			return nil, StorageError{Msg: "Something went wrong while getting employees"}
 		}
 
@@ -98,7 +94,6 @@ func (s *PostgresStorage) GetEmployees() ([]*Employee, error) {
 func (s *PostgresStorage) GetEmployee(id int) (*Employee, error) {
 	rows, err := s.db.Query("SELECT * FROM employees WHERE id = $1", id)
 	if err != nil {
-		log.Printf("Error while getting employee: %v", err)
 		return nil, StorageError{Msg: "Something went wrong while getting employee"}
 	}
 	defer rows.Close()
@@ -120,7 +115,6 @@ func scanIntoEmployee(rows *sql.Rows) (*Employee, error) {
 		&employee.Phone,
 		&employee.City,
 	); err != nil {
-		log.Printf("Error while scanning employee: %v", err)
 		return nil, StorageError{Msg: "Something went wrong while getting employees"}
 	}
 
